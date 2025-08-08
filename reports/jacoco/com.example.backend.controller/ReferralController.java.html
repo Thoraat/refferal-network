@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReferralController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend</a> &gt; <a href="index.source.html" class="el_package">com.example.backend.controller</a> &gt; <span class="el_source">ReferralController.java</span></div><h1>ReferralController.java</h1><pre class="source lang-java linenums">package com.example.backend.controller;
+
+
+import com.example.backend.service.ReferralNetworkService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/referrals&quot;)
+<span class="fc" id="L13">public class ReferralController {</span>
+
+    @Autowired
+    private ReferralNetworkService referralService;
+
+    @PostMapping(&quot;/add&quot;)
+    public String addReferral(@RequestParam String referrerId, @RequestParam String candidateId) {
+<span class="nc" id="L20">        boolean success = referralService.addReferral(referrerId, candidateId);</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">        return success ? &quot;Referral added&quot; : &quot;Invalid referral&quot;;</span>
+    }
+
+    @GetMapping(&quot;/{userId}&quot;)
+    public List&lt;String&gt; getReferrals(@PathVariable String userId) {
+<span class="nc" id="L26">        return referralService.getDirectReferrals(userId);</span>
+    }
+
+    @GetMapping(&quot;/reach/{userId}&quot;)
+    public int getTotalReach(@PathVariable String userId) {
+<span class="nc" id="L31">        return referralService.getTotalReach(userId);</span>
+    }
+
+    @GetMapping(&quot;/top-referrers&quot;)
+    public List&lt;String&gt; getTopReferrers(@RequestParam int k) {
+<span class="nc" id="L36">        return referralService.getTopReferrers(k);</span>
+    }
+
+    @GetMapping(&quot;/influencers/unique-reach&quot;)
+    public List&lt;String&gt; getTopUnique(@RequestParam int k) {
+<span class="nc" id="L41">        return referralService.getTopUniqueExpanders(k);</span>
+    }
+
+    @GetMapping(&quot;/influencers/flow-centrality&quot;)
+    public Map&lt;String, Integer&gt; getFlowCentrality() {
+<span class="nc" id="L46">        return referralService.getFlowCentralityScores();</span>
+    }
+
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

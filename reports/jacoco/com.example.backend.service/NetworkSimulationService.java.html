@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NetworkSimulationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend</a> &gt; <a href="index.source.html" class="el_package">com.example.backend.service</a> &gt; <span class="el_source">NetworkSimulationService.java</span></div><h1>NetworkSimulationService.java</h1><pre class="source lang-java linenums">package com.example.backend.service;
+
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+@Service
+<span class="fc" id="L10">public class NetworkSimulationService {</span>
+
+<span class="fc" id="L12">    private final int INITIAL_REFERRERS = 100;</span>
+<span class="fc" id="L13">    private final int REFERRAL_CAPACITY = 10;</span>
+
+    public List&lt;Double&gt; simulate(double p, int days) {
+<span class="fc" id="L16">        List&lt;Double&gt; cumulativeReferrals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L17">        double totalReferrals = 0;</span>
+<span class="fc" id="L18">        double activeReferrers = INITIAL_REFERRERS;</span>
+<span class="fc" id="L19">        double[] capacities = new double[days + 1];  // running estimate of new referrals each day</span>
+
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        for (int day = 0; day &lt;= days; day++) {</span>
+            // Expected successful referrals today = activeReferrers * p
+<span class="fc" id="L23">            double expectedToday = activeReferrers * p;</span>
+
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">            if (expectedToday &gt; activeReferrers * REFERRAL_CAPACITY) {</span>
+<span class="nc" id="L26">                expectedToday = activeReferrers * REFERRAL_CAPACITY;</span>
+            }
+
+<span class="fc" id="L29">            totalReferrals += expectedToday;</span>
+<span class="fc" id="L30">            cumulativeReferrals.add(totalReferrals);</span>
+
+            // Update active referrers for next day
+<span class="fc" id="L33">            activeReferrers += expectedToday;</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            if (activeReferrers &gt; INITIAL_REFERRERS * REFERRAL_CAPACITY) {</span>
+<span class="fc" id="L35">                activeReferrers = INITIAL_REFERRERS * REFERRAL_CAPACITY; // max out</span>
+            }
+        }
+
+<span class="fc" id="L39">        return cumulativeReferrals;</span>
+    }
+
+    public int daysToTarget(double p, int targetTotal) {
+<span class="fc" id="L43">        double totalReferrals = 0;</span>
+<span class="fc" id="L44">        double activeReferrers = INITIAL_REFERRERS;</span>
+<span class="fc" id="L45">        int day = 0;</span>
+
+<span class="pc bpc" id="L47" title="1 of 4 branches missed.">        while (totalReferrals &lt; targetTotal &amp;&amp; day &lt; 10000) { // safety limit</span>
+<span class="fc" id="L48">            double expectedToday = activeReferrers * p;</span>
+<span class="fc" id="L49">            totalReferrals += expectedToday;</span>
+<span class="fc" id="L50">            activeReferrers += expectedToday;</span>
+
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">            if (activeReferrers &gt; INITIAL_REFERRERS * REFERRAL_CAPACITY) {</span>
+<span class="nc" id="L53">                activeReferrers = INITIAL_REFERRERS * REFERRAL_CAPACITY;</span>
+            }
+
+<span class="fc" id="L56">            day++;</span>
+<span class="fc" id="L57">        }</span>
+
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        return (totalReferrals &gt;= targetTotal) ? day : -1;</span>
+    }
+
+    public Integer minBonusForTarget(
+            int days,
+            int targetHires,
+            Function&lt;Double, Double&gt; adoptionProb,
+            double eps
+    ) {
+<span class="fc" id="L68">        int low = 0;</span>
+<span class="fc" id="L69">        int high = 10000; // max bonus $10,000</span>
+<span class="fc" id="L70">        Integer answer = null;</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        while (low &lt;= high) {</span>
+<span class="fc" id="L73">            int mid = (low + high) / 2;</span>
+
+<span class="fc" id="L75">            double p = adoptionProb.apply((double) mid);</span>
+<span class="fc" id="L76">            List&lt;Double&gt; simResult = simulate(p, days);</span>
+<span class="fc" id="L77">            double total = simResult.get(simResult.size() - 1);</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            if (total &gt;= targetHires - eps) {</span>
+<span class="fc" id="L80">                answer = mid;</span>
+<span class="fc" id="L81">                high = mid - 10; // try smaller</span>
+            } else {
+<span class="fc" id="L83">                low = mid + 10; // need more bonus</span>
+            }
+<span class="fc" id="L85">        }</span>
+
+<span class="fc" id="L87">        return answer;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

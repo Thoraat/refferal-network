@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReferralNetworkService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">backend</a> &gt; <a href="index.source.html" class="el_package">com.example.backend.service</a> &gt; <span class="el_source">ReferralNetworkService.java</span></div><h1>ReferralNetworkService.java</h1><pre class="source lang-java linenums">package com.example.backend.service;
+
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+<span class="fc" id="L9">public class ReferralNetworkService {</span>
+<span class="fc" id="L10">    private final Map&lt;String, List&lt;String&gt;&gt; graph = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L11">    private final Map&lt;String, String&gt; referredBy = new HashMap&lt;&gt;();</span>
+
+    public boolean addReferral(String referrerId, String candidateId) {
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (referrerId.equals(candidateId)) return false; // no self-referrals</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        if (referredBy.containsKey(candidateId)) return false; // already referred</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">        if (createsCycle(referrerId, candidateId)) return false; // no cycles</span>
+
+<span class="fc" id="L18">        graph.putIfAbsent(referrerId, new ArrayList&lt;&gt;());</span>
+<span class="fc" id="L19">        graph.get(referrerId).add(candidateId);</span>
+<span class="fc" id="L20">        referredBy.put(candidateId, referrerId);</span>
+<span class="fc" id="L21">        return true;</span>
+    }
+
+    public List&lt;String&gt; getDirectReferrals(String userId) {
+<span class="fc" id="L25">        return graph.getOrDefault(userId, Collections.emptyList());</span>
+    }
+
+    private boolean createsCycle(String referrerId, String candidateId) {
+<span class="fc" id="L29">        Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L30">        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L31">        queue.add(candidateId);</span>
+
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
+<span class="fc" id="L34">            String current = queue.poll();</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">            if (current.equals(referrerId)) return true;</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (visited.contains(current)) continue;</span>
+<span class="fc" id="L37">            visited.add(current);</span>
+<span class="fc" id="L38">            queue.addAll(graph.getOrDefault(current, Collections.emptyList()));</span>
+<span class="fc" id="L39">        }</span>
+
+<span class="fc" id="L41">        return false;</span>
+    }
+
+    public int getTotalReach(String userId) {
+<span class="fc" id="L45">        Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L46">        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();</span>
+
+<span class="fc" id="L48">        queue.add(userId);</span>
+
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
+<span class="fc" id="L51">            String current = queue.poll();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            for (String neighbor : graph.getOrDefault(current, new ArrayList&lt;&gt;())) {</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                if (!visited.contains(neighbor)) {</span>
+<span class="fc" id="L54">                    visited.add(neighbor);</span>
+<span class="fc" id="L55">                    queue.add(neighbor);</span>
+                }
+<span class="fc" id="L57">            }</span>
+<span class="fc" id="L58">        }</span>
+
+<span class="fc" id="L60">        return visited.size(); // total reach (excluding self)</span>
+    }
+
+    public List&lt;String&gt; getTopReferrers(int k) {
+<span class="fc" id="L64">        Map&lt;String, Integer&gt; reachCount = new HashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (String userId : graph.keySet()) {</span>
+<span class="fc" id="L67">            int reach = getTotalReach(userId);</span>
+<span class="fc" id="L68">            reachCount.put(userId, reach);</span>
+<span class="fc" id="L69">        }</span>
+
+<span class="fc" id="L71">        return reachCount.entrySet().stream()</span>
+<span class="fc" id="L72">                .sorted((a, b) -&gt; b.getValue() - a.getValue()) // descending</span>
+<span class="fc" id="L73">                .limit(k)</span>
+<span class="fc" id="L74">                .map(Map.Entry::getKey)</span>
+<span class="fc" id="L75">                .collect(Collectors.toList());</span>
+    }
+
+    public Map&lt;String, Set&lt;String&gt;&gt; getAllReachSets() {
+<span class="fc" id="L79">        Map&lt;String, Set&lt;String&gt;&gt; allReach = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (String user : graph.keySet()) {</span>
+<span class="fc" id="L81">            allReach.put(user, getReachSet(user));</span>
+<span class="fc" id="L82">        }</span>
+<span class="fc" id="L83">        return allReach;</span>
+    }
+
+    private Set&lt;String&gt; getReachSet(String userId) {
+<span class="fc" id="L87">        Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L88">        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L89">        queue.add(userId);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
+<span class="fc" id="L92">            String current = queue.poll();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            for (String neighbor : graph.getOrDefault(current, new ArrayList&lt;&gt;())) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                if (!visited.contains(neighbor)) {</span>
+<span class="fc" id="L95">                    visited.add(neighbor);</span>
+<span class="fc" id="L96">                    queue.add(neighbor);</span>
+                }
+<span class="fc" id="L98">            }</span>
+<span class="fc" id="L99">        }</span>
+
+<span class="fc" id="L101">        return visited;</span>
+    }
+
+    public List&lt;String&gt; getTopUniqueExpanders(int k) {
+<span class="fc" id="L105">        Map&lt;String, Set&lt;String&gt;&gt; allReach = getAllReachSets();</span>
+<span class="fc" id="L106">        Set&lt;String&gt; covered = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L107">        List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (int i = 0; i &lt; k; i++) {</span>
+<span class="fc" id="L110">            String bestUser = null;</span>
+<span class="fc" id="L111">            int maxNew = -1;</span>
+
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (Map.Entry&lt;String, Set&lt;String&gt;&gt; entry : allReach.entrySet()) {</span>
+<span class="fc" id="L114">                String user = entry.getKey();</span>
+<span class="fc" id="L115">                Set&lt;String&gt; reachSet = new HashSet&lt;&gt;(entry.getValue());</span>
+<span class="fc" id="L116">                reachSet.removeAll(covered); // Only consider new reach</span>
+<span class="fc bfc" id="L117" title="All 4 branches covered.">                if (reachSet.size() &gt; maxNew &amp;&amp; !result.contains(user)) {</span>
+<span class="fc" id="L118">                    maxNew = reachSet.size();</span>
+<span class="fc" id="L119">                    bestUser = user;</span>
+                }
+<span class="fc" id="L121">            }</span>
+
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">            if (bestUser == null) break;</span>
+<span class="fc" id="L124">            result.add(bestUser);</span>
+<span class="fc" id="L125">            covered.addAll(allReach.get(bestUser));</span>
+        }
+
+<span class="fc" id="L128">        return result;</span>
+    }
+
+    public Map&lt;String, Integer&gt; getFlowCentralityScores() {
+<span class="fc" id="L132">        Map&lt;String, Integer&gt; scores = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L133">        Set&lt;String&gt; allUsers = new HashSet&lt;&gt;(graph.keySet());</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (List&lt;String&gt; targets : graph.values()) allUsers.addAll(targets);</span>
+
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (String user : allUsers) scores.put(user, 0);</span>
+
+        // Run BFS from every user
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        for (String source : allUsers) {</span>
+<span class="fc" id="L140">            Map&lt;String, Integer&gt; distFromSource = bfsDistances(source);</span>
+
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            for (String target : allUsers) {</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                if (source.equals(target)) continue;</span>
+
+<span class="fc" id="L145">                int distST = distFromSource.getOrDefault(target, Integer.MAX_VALUE);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">                if (distST == Integer.MAX_VALUE) continue;</span>
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                for (String v : allUsers) {</span>
+<span class="fc bfc" id="L149" title="All 4 branches covered.">                    if (v.equals(source) || v.equals(target)) continue;</span>
+<span class="fc" id="L150">                    int distSV = distFromSource.getOrDefault(v, Integer.MAX_VALUE);</span>
+<span class="fc" id="L151">                    Map&lt;String, Integer&gt; distFromV = bfsDistances(v);</span>
+<span class="fc" id="L152">                    int distVT = distFromV.getOrDefault(target, Integer.MAX_VALUE);</span>
+
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                    if (distSV + distVT == distST) {</span>
+<span class="fc" id="L155">                        scores.put(v, scores.get(v) + 1);</span>
+                    }
+<span class="fc" id="L157">                }</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc" id="L159">        }</span>
+
+<span class="fc" id="L161">        return scores;</span>
+    }
+
+    private Map&lt;String, Integer&gt; bfsDistances(String start) {
+<span class="fc" id="L165">        Map&lt;String, Integer&gt; dist = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L166">        Queue&lt;String&gt; queue = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L167">        queue.add(start);</span>
+<span class="fc" id="L168">        dist.put(start, 0);</span>
+
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        while (!queue.isEmpty()) {</span>
+<span class="fc" id="L171">            String current = queue.poll();</span>
+<span class="fc" id="L172">            int currDist = dist.get(current);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            for (String neighbor : graph.getOrDefault(current, new ArrayList&lt;&gt;())) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                if (!dist.containsKey(neighbor)) {</span>
+<span class="fc" id="L175">                    dist.put(neighbor, currDist + 1);</span>
+<span class="fc" id="L176">                    queue.add(neighbor);</span>
+                }
+<span class="fc" id="L178">            }</span>
+<span class="fc" id="L179">        }</span>
+
+<span class="fc" id="L181">        return dist;</span>
+    }
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
