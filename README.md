@@ -1,3 +1,32 @@
+## 🔧 Setup Instructions
+
+Follow these steps to set up and run the backend project locally:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Thoraat/mercor-challenge.git
+   cd mercor-challenge
+   ```
+
+2. **Ensure you have Java 21 installed**.
+
+3. **Build and run the application using Maven**:
+   ```bash
+   mvn clean install
+   mvn spring-boot:run
+   ```
+
+4. **Run tests and generate reports**:
+   ```bash
+   mvn clean test
+   ```
+
+5. **View reports**:
+   - Code coverage: `reports/jacoco/index.html`
+   - JUnit reports: `reports/junit/*.txt`
+
+---
+
 # Referral Network Backend
 
 This is a Spring Boot-based backend service designed to manage a referral network system. It allows adding referrals between users, querying referral relationships, and performing analytics such as top referrers, reach, flow centrality, and optimal bonus allocation.
